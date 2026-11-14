@@ -2,7 +2,7 @@
 
 # No More Other: Github Languages
 
-[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](https://github.com/Asderekl/no-more-other-github-languages)
+[![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)](https://github.com/Asderekl/no-more-other-github-languages)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub stars](https://img.shields.io/github/stars/Asderekl/no-more-other-github-languages?style=social)](https://github.com/Asderekl/no-more-other-github-languages)
 
