@@ -8,8 +8,8 @@
 // @connect      api.github.com
 // @run-at       document-idle
 // @license      MIT
-// @updateURL    https://raw.githubusercontent.com/Asderekl/no-more-other-github-languages/main/no-more-other.user.js
-// @downloadURL  https://raw.githubusercontent.com/Asderekl/no-more-other-github-languages/main/no-more-other.user.js
+// @updateURL    https://raw.githubusercontent.com/Asderekl/No-More-Other-GitHub-Languages/main/no-more-other.user.js
+// @downloadURL  https://raw.githubusercontent.com/Asderekl/No-More-Other-GitHub-Languages/main/no-more-other.user.js
 // ==/UserScript==
 
 (function() {
@@ -59,8 +59,13 @@
         container.setAttribute('data-lang-script-done', 'true');
 
         try {
+            console.log(`[No More Other] Fetching languages for ${repoInfo.owner}/${repoInfo.repo}...`);
             const response = await fetch(`https://api.github.com/repos/${repoInfo.owner}/${repoInfo.repo}/languages`);
-            if (!response.ok) return;
+
+            if (!response.ok) {
+                console.error(`[No More Other] API Error: ${response.status} ${response.statusText}. Возможно, превышен лимит (60 запросов/час).`);
+                return;
+            }
 
             const langData = await response.json();
             if (Object.keys(langData).length === 0) return;
@@ -70,9 +75,16 @@
 
             const sortedLangs = Object.entries(langData).sort((a, b) => b[1] - a[1]);
 
-            // Nuke everything inside the container and recreate the header
-            // This is much safer than trying to remove specific child nodes
-            container.innerHTML = '<h2 class="h4 mb-3">Languages</h2>';
+            // Hide original elements (do not delete them to avoid React crashes)
+            Array.from(container.children).forEach(child => {
+                if (child.tagName !== 'H2' && !child.classList.contains('h4')) {
+                    child.style.display = 'none';
+                }
+            });
+
+            // Create a wrapper for our custom UI
+            const wrapper = document.createElement('div');
+            wrapper.className = 'custom-lang-wrapper';
 
             const newBar = document.createElement('div');
             newBar.style.cssText = 'display:flex; height:8px; border-radius:4px; overflow:hidden; margin-top:12px; margin-bottom:8px; width:100%;';
@@ -87,7 +99,7 @@
                 const segment = document.createElement('div');
                 segment.style.backgroundColor = color;
                 segment.style.flex = `${percent} 1 0%`;
-                segment.style.minWidth = '2px'; // Prevents tiny languages from disappearing
+                segment.style.minWidth = '2px';
                 segment.title = `${lang} ${formatPercent(percent)}%`;
                 newBar.appendChild(segment);
 
@@ -108,8 +120,10 @@
                 newList.appendChild(li);
             });
 
-            container.appendChild(newBar);
-            container.appendChild(newList);
+            wrapper.appendChild(newBar);
+            wrapper.appendChild(newList);
+            container.appendChild(wrapper);
+            console.log("[No More Other] Successfully rendered custom languages.");
 
         } catch (error) {
             console.error("[No More Other] Error:", error);
@@ -121,40 +135,37 @@
         if (!repoInfo) return;
 
         const observer = new MutationObserver(() => {
-            // Find the container by looking for the "Languages" header or the "Other" text
             let container = null;
-
             const headers = Array.from(document.querySelectorAll('h2, h3'));
             const langHeader = headers.find(el => el.textContent.trim() === 'Languages');
 
             if (langHeader) {
                 container = langHeader.closest('.BorderGrid-cell') || langHeader.parentElement;
             } else {
-                // Fallback: find the element containing the word "Other" in the language list
                 const spans = Array.from(document.querySelectorAll('span, li'));
                 const otherSpan = spans.find(el => el.textContent.trim() === 'Other');
                 if (otherSpan) {
-                    container = otherSpan.closest('.BorderGrid-cell') || otherSpan.closest('ul').parentElement;
+                    container = otherSpan.closest('.BorderGrid-cell') || otherSpan.closest('ul')?.parentElement;
                 }
             }
 
             if (container && !container.hasAttribute('data-lang-script-done')) {
+                observer.disconnect(); // Disconnect once found to stop interfering with React
                 processLanguages(container, repoInfo);
             }
         });
 
         observer.observe(document.body, { childList: true, subtree: true });
 
-        // Force run after 1.5s just in case the observer missed it during SPA transition
+        // Fallback for SPA transitions
         setTimeout(() => {
-            let container = null;
             const headers = Array.from(document.querySelectorAll('h2, h3'));
             const langHeader = headers.find(el => el.textContent.trim() === 'Languages');
             if (langHeader) {
-                container = langHeader.closest('.BorderGrid-cell') || langHeader.parentElement;
-            }
-            if (container && !container.hasAttribute('data-lang-script-done')) {
-                processLanguages(container, repoInfo);
+                const container = langHeader.closest('.BorderGrid-cell') || langHeader.parentElement;
+                if (container && !container.hasAttribute('data-lang-script-done')) {
+                    processLanguages(container, repoInfo);
+                }
             }
         }, 1500);
     }
