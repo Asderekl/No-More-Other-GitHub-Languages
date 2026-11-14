@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         No More Other: GitHub Languages
 // @namespace    https://github.com/Asderekl/no-more-other-github-languages
-// @version      1.0.5
+// @version      1.0.2
 // @description  Reveals hidden languages in GitHub statistics
 // @match        https://github.com/*
 // @grant        none
