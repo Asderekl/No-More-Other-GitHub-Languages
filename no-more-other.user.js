@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         No More Other: GitHub Languages
 // @namespace    https://github.com/Asderekl/no-more-other-github-languages
-// @version      1.0.0
+// @version      1.0.1
 // @description  Reveals hidden languages in GitHub statistics
 // @match        https://github.com/*
 // @grant        none
@@ -58,76 +58,114 @@
         if (container.getAttribute('data-lang-script-done')) return;
         container.setAttribute('data-lang-script-done', 'true');
 
+        const cacheKey = `nmo_langs_${repoInfo.owner}_${repoInfo.repo}`;
+        let langData = null;
+        let cachedData = null;
+
+        // 1. Try to load from localStorage cache
         try {
-            console.log(`[No More Other] Fetching languages for ${repoInfo.owner}/${repoInfo.repo}...`);
-            const response = await fetch(`https://api.github.com/repos/${repoInfo.owner}/${repoInfo.repo}/languages`);
-
-            if (!response.ok) {
-                console.error(`[No More Other] API Error: ${response.status} ${response.statusText}. Возможно, превышен лимит (60 запросов/час).`);
-                return;
-            }
-
-            const langData = await response.json();
-            if (Object.keys(langData).length === 0) return;
-
-            const totalBytes = Object.values(langData).reduce((a, b) => a + b, 0);
-            if (totalBytes === 0) return;
-
-            const sortedLangs = Object.entries(langData).sort((a, b) => b[1] - a[1]);
-
-            // Hide original elements (do not delete them to avoid React crashes)
-            Array.from(container.children).forEach(child => {
-                if (child.tagName !== 'H2' && !child.classList.contains('h4')) {
-                    child.style.display = 'none';
+            const cachedStr = localStorage.getItem(cacheKey);
+            if (cachedStr) {
+                cachedData = JSON.parse(cachedStr);
+                // If cache is less than 1 hour old, use it
+                if (Date.now() - cachedData.timestamp < 3600000) {
+                    langData = cachedData.data;
+                    console.log("[No More Other] Loaded from cache.");
                 }
-            });
-
-            // Create a wrapper for our custom UI
-            const wrapper = document.createElement('div');
-            wrapper.className = 'custom-lang-wrapper';
-
-            const newBar = document.createElement('div');
-            newBar.style.cssText = 'display:flex; height:8px; border-radius:4px; overflow:hidden; margin-top:12px; margin-bottom:8px; width:100%;';
-
-            const newList = document.createElement('ul');
-            newList.style.cssText = 'display:flex; flex-wrap:wrap; gap:16px; list-style:none; padding:0; margin:0; font-size:12px;';
-
-            sortedLangs.forEach(([lang, bytes]) => {
-                const percent = ((bytes / totalBytes) * 100);
-                const color = LANG_COLORS[lang] || getDeterministicColor(lang);
-
-                const segment = document.createElement('div');
-                segment.style.backgroundColor = color;
-                segment.style.flex = `${percent} 1 0%`;
-                segment.style.minWidth = '2px';
-                segment.title = `${lang} ${formatPercent(percent)}%`;
-                newBar.appendChild(segment);
-
-                const li = document.createElement('li');
-                li.style.cssText = 'display:flex; align-items:center; gap:4px;';
-
-                const dot = document.createElement('span');
-                dot.style.cssText = `width:8px; height:8px; border-radius:50%; background-color:${color}`;
-
-                const text = document.createElement('span');
-                const strong = document.createElement('strong');
-                strong.textContent = lang;
-                text.appendChild(strong);
-                text.appendChild(document.createTextNode(` ${formatPercent(percent)}%`));
-
-                li.appendChild(dot);
-                li.appendChild(text);
-                newList.appendChild(li);
-            });
-
-            wrapper.appendChild(newBar);
-            wrapper.appendChild(newList);
-            container.appendChild(wrapper);
-            console.log("[No More Other] Successfully rendered custom languages.");
-
-        } catch (error) {
-            console.error("[No More Other] Error:", error);
+            }
+        } catch (e) {
+            console.warn("[No More Other] Cache read error", e);
         }
+
+        // 2. If no valid cache, fetch from API
+        if (!langData) {
+            try {
+                console.log(`[No More Other] Fetching from API for ${repoInfo.owner}/${repoInfo.repo}...`);
+                const response = await fetch(`https://api.github.com/repos/${repoInfo.owner}/${repoInfo.repo}/languages`);
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                }
+
+                langData = await response.json();
+
+                // Save to cache
+                try {
+                    localStorage.setItem(cacheKey, JSON.stringify({ data: langData, timestamp: Date.now() }));
+                } catch (e) {
+                    console.warn("[No More Other] Cache write error", e);
+                }
+
+            } catch (error) {
+                console.error(`[No More Other] ${error.message}. Возможно, превышен лимит API (60 в час).`);
+                // Fallback: if API fails but we have old cache, use it!
+                if (cachedData && cachedData.data) {
+                    langData = cachedData.data;
+                    console.log("[No More Other] Using stale cache due to API error.");
+                } else {
+                    return; // Give up completely
+                }
+            }
+        }
+
+        if (!langData || Object.keys(langData).length === 0) return;
+
+        const totalBytes = Object.values(langData).reduce((a, b) => a + b, 0);
+        if (totalBytes === 0) return;
+
+        const sortedLangs = Object.entries(langData).sort((a, b) => b[1] - a[1]);
+
+        // Hide original elements
+        Array.from(container.children).forEach(child => {
+            if (child.tagName !== 'H2' && !child.classList.contains('h4')) {
+                child.style.display = 'none';
+            }
+        });
+
+        // Remove old wrapper if it exists (in case of SPA re-render)
+        const oldWrapper = container.querySelector('.custom-lang-wrapper');
+        if (oldWrapper) oldWrapper.remove();
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'custom-lang-wrapper';
+
+        const newBar = document.createElement('div');
+        newBar.style.cssText = 'display:flex; height:8px; border-radius:4px; overflow:hidden; margin-top:12px; margin-bottom:8px; width:100%;';
+
+        const newList = document.createElement('ul');
+        newList.style.cssText = 'display:flex; flex-wrap:wrap; gap:16px; list-style:none; padding:0; margin:0; font-size:12px;';
+
+        sortedLangs.forEach(([lang, bytes]) => {
+            const percent = ((bytes / totalBytes) * 100);
+            const color = LANG_COLORS[lang] || getDeterministicColor(lang);
+
+            const segment = document.createElement('div');
+            segment.style.backgroundColor = color;
+            segment.style.flex = `${percent} 1 0%`;
+            segment.style.minWidth = '2px';
+            segment.title = `${lang} ${formatPercent(percent)}%`;
+            newBar.appendChild(segment);
+
+            const li = document.createElement('li');
+            li.style.cssText = 'display:flex; align-items:center; gap:4px;';
+
+            const dot = document.createElement('span');
+            dot.style.cssText = `width:8px; height:8px; border-radius:50%; background-color:${color}`;
+
+            const text = document.createElement('span');
+            const strong = document.createElement('strong');
+            strong.textContent = lang;
+            text.appendChild(strong);
+            text.appendChild(document.createTextNode(` ${formatPercent(percent)}%`));
+
+            li.appendChild(dot);
+            li.appendChild(text);
+            newList.appendChild(li);
+        });
+
+        wrapper.appendChild(newBar);
+        wrapper.appendChild(newList);
+        container.appendChild(wrapper);
     }
 
     function initObserver() {
@@ -150,14 +188,13 @@
             }
 
             if (container && !container.hasAttribute('data-lang-script-done')) {
-                observer.disconnect(); // Disconnect once found to stop interfering with React
+                observer.disconnect();
                 processLanguages(container, repoInfo);
             }
         });
 
         observer.observe(document.body, { childList: true, subtree: true });
 
-        // Fallback for SPA transitions
         setTimeout(() => {
             const headers = Array.from(document.querySelectorAll('h2, h3'));
             const langHeader = headers.find(el => el.textContent.trim() === 'Languages');
