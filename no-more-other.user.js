@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         No More Other: GitHub Languages
 // @namespace    https://github.com/Asderekl/no-more-other-github-languages
-// @version      1.0.1
+// @version      1.0.5
 // @description  Reveals hidden languages in GitHub statistics
 // @match        https://github.com/*
 // @grant        none
@@ -55,74 +55,57 @@
     }
 
     async function processLanguages(container, repoInfo) {
-        if (container.getAttribute('data-lang-script-done')) return;
-        container.setAttribute('data-lang-script-done', 'true');
+        if (container.getAttribute('data-nmo-done')) return;
+        container.setAttribute('data-nmo-done', 'true');
 
         const cacheKey = `nmo_langs_${repoInfo.owner}_${repoInfo.repo}`;
         let langData = null;
         let cachedData = null;
 
-        // 1. Try to load from localStorage cache
         try {
             const cachedStr = localStorage.getItem(cacheKey);
             if (cachedStr) {
                 cachedData = JSON.parse(cachedStr);
-                // If cache is less than 1 hour old, use it
                 if (Date.now() - cachedData.timestamp < 3600000) {
                     langData = cachedData.data;
-                    console.log("[No More Other] Loaded from cache.");
                 }
             }
-        } catch (e) {
-            console.warn("[No More Other] Cache read error", e);
-        }
+        } catch (e) {}
 
-        // 2. If no valid cache, fetch from API
         if (!langData) {
             try {
-                console.log(`[No More Other] Fetching from API for ${repoInfo.owner}/${repoInfo.repo}...`);
                 const response = await fetch(`https://api.github.com/repos/${repoInfo.owner}/${repoInfo.repo}/languages`);
-
-                if (!response.ok) {
-                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
-                }
-
-                langData = await response.json();
-
-                // Save to cache
-                try {
-                    localStorage.setItem(cacheKey, JSON.stringify({ data: langData, timestamp: Date.now() }));
-                } catch (e) {
-                    console.warn("[No More Other] Cache write error", e);
-                }
-
-            } catch (error) {
-                console.error(`[No More Other] ${error.message}. Возможно, превышен лимит API (60 в час).`);
-                // Fallback: if API fails but we have old cache, use it!
-                if (cachedData && cachedData.data) {
-                    langData = cachedData.data;
-                    console.log("[No More Other] Using stale cache due to API error.");
+                if (response.ok) {
+                    langData = await response.json();
+                    try {
+                        localStorage.setItem(cacheKey, JSON.stringify({ data: langData, timestamp: Date.now() }));
+                    } catch (e) {}
                 } else {
-                    return; // Give up completely
+                    console.warn(`[No More Other] API Error: ${response.status}. Используем кэш.`);
+                    if (cachedData) langData = cachedData.data;
                 }
+            } catch (error) {
+                console.error("[No More Other] Fetch error:", error);
+                if (cachedData) langData = cachedData.data;
             }
         }
 
-        if (!langData || Object.keys(langData).length === 0) return;
+        if (!langData || Object.keys(langData).length === 0) {
+            container.removeAttribute('data-nmo-done');
+            return;
+        }
 
         const totalBytes = Object.values(langData).reduce((a, b) => a + b, 0);
         if (totalBytes === 0) return;
 
         const sortedLangs = Object.entries(langData).sort((a, b) => b[1] - a[1]);
 
-        // Hide original elements
         Array.from(container.children).forEach(child => {
             if (child.tagName !== 'H2' && !child.classList.contains('h4')) {
                 child.style.display = 'none';
             }
         });
 
-        // Remove old wrapper if it exists (in case of SPA re-render)
         const oldWrapper = container.querySelector('.custom-lang-wrapper');
         if (oldWrapper) oldWrapper.remove();
 
@@ -168,45 +151,27 @@
         container.appendChild(wrapper);
     }
 
-    function initObserver() {
+    function scanAndProcess() {
         const repoInfo = getRepoInfo();
         if (!repoInfo) return;
 
-        const observer = new MutationObserver(() => {
-            let container = null;
-            const headers = Array.from(document.querySelectorAll('h2, h3'));
-            const langHeader = headers.find(el => el.textContent.trim() === 'Languages');
+        const headers = Array.from(document.querySelectorAll('h2, h3'));
+        const langHeader = headers.find(el => el.textContent.includes('Languages'));
 
-            if (langHeader) {
-                container = langHeader.closest('.BorderGrid-cell') || langHeader.parentElement;
-            } else {
-                const spans = Array.from(document.querySelectorAll('span, li'));
-                const otherSpan = spans.find(el => el.textContent.trim() === 'Other');
-                if (otherSpan) {
-                    container = otherSpan.closest('.BorderGrid-cell') || otherSpan.closest('ul')?.parentElement;
-                }
-            }
-
-            if (container && !container.hasAttribute('data-lang-script-done')) {
-                observer.disconnect();
+        if (langHeader) {
+            const container = langHeader.closest('.BorderGrid-cell') || langHeader.parentElement;
+            if (container && !container.hasAttribute('data-nmo-done')) {
                 processLanguages(container, repoInfo);
             }
-        });
-
-        observer.observe(document.body, { childList: true, subtree: true });
-
-        setTimeout(() => {
-            const headers = Array.from(document.querySelectorAll('h2, h3'));
-            const langHeader = headers.find(el => el.textContent.trim() === 'Languages');
-            if (langHeader) {
-                const container = langHeader.closest('.BorderGrid-cell') || langHeader.parentElement;
-                if (container && !container.hasAttribute('data-lang-script-done')) {
-                    processLanguages(container, repoInfo);
-                }
-            }
-        }, 1500);
+        }
     }
 
-    document.addEventListener('turbo:load', initObserver);
-    window.addEventListener('load', initObserver);
+    const observer = new MutationObserver(() => {
+        scanAndProcess();
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+    document.addEventListener('turbo:load', () => setTimeout(scanAndProcess, 500));
+    window.addEventListener('load', () => setTimeout(scanAndProcess, 500));
+    setTimeout(scanAndProcess, 1500);
 })();
