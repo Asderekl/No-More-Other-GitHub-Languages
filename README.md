@@ -1,6 +1,6 @@
 <div align="center">
 
-# No More Other Github Languages
+# No More Other: Github Languages
 
 [![Version](https://img.shields.io/badge/version-7.0-blue.svg)](https://github.com/Asderekl/no-more-other-github-languages)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -14,7 +14,7 @@
 
 ## 📖 English
 
-**No More Other** is a lightweight userscript (for [Violentmonkey](https://violentmonkey.github.io/) / [Tampermonkey](https://www.tampermonkey.net/)) that fixes GitHub's language statistics. It reveals languages buried under the "Other" category, displaying them with precise percentages (down to `< 0.01%`) and stable, unique colors.
+**No More Other: Github Languages** is a lightweight userscript (for [Violentmonkey](https://violentmonkey.github.io/) / [Tampermonkey](https://www.tampermonkey.net/)) that fixes GitHub's language statistics. It reveals languages buried under the "Other" category, displaying them with precise percentages (down to `< 0.01%`) and stable, unique colors.
 
 ### ✨ Features
 
@@ -36,7 +36,7 @@
 
 ## 📖 Русский
 
-**No More Other** — это легкий пользовательский скрипт (для [Violentmonkey](https://violentmonkey.github.io/) / [Tampermonkey](https://www.tampermonkey.net/)), который исправляет статистику языков на GitHub. Он раскрывает языки, скрытые в категории «Other», отображая их с точными процентами (вплоть до `< 0.01%`) и стабильными уникальными цветами.
+**No More Other: Github Languages** — это легкий пользовательский скрипт (для [Violentmonkey](https://violentmonkey.github.io/) / [Tampermonkey](https://www.tampermonkey.net/)), который исправляет статистику языков на GitHub. Он раскрывает языки, скрытые в категории «Other», отображая их с точными процентами (вплоть до `< 0.01%`) и стабильными уникальными цветами.
 
 ### ✨ Особенности
 
