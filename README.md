@@ -2,7 +2,7 @@
 
 # No More Other: Github Languages
 
-[![Version](https://img.shields.io/badge/version-7.0-blue.svg)](https://github.com/Asderekl/no-more-other-github-languages)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/Asderekl/no-more-other-github-languages)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub stars](https://img.shields.io/github/stars/Asderekl/no-more-other-github-languages?style=social)](https://github.com/Asderekl/no-more-other-github-languages)
 
@@ -28,7 +28,7 @@
 1.  Install a userscript manager for your browser:
     *   [Violentmonkey](https://violentmonkey.github.io/) (Recommended for Chrome/Firefox)
     *   [Tampermonkey](https://www.tampermonkey.net/) (Classic choice)
-2.  **[Click here to install the script](https://raw.githubusercontent.com/Asderekl/No-More-Other-GitHub-Languages/refs/heads/main/no-more-other.user.js)**. Confirm the installation in the userscript manager popup.
+2.  **[Click here to install the script](https://raw.githubusercontent.com/Asderekl/No-More-Other-GitHub-Languages/main/no-more-other.user.js)**. Confirm the installation in the userscript manager popup.
 4.  Open any repository on GitHub and refresh the page.
 
 ---
@@ -49,6 +49,6 @@
 1.  Установите менеджер скриптов для вашего браузера:
     *   [Violentmonkey](https://violentmonkey.github.io/) (Рекомендуется для Chrome/Firefox)
     *   [Tampermonkey](https://www.tampermonkey.net/) (Классический выбор)
-2.  **[Нажмите сюда, чтобы установить скрипт](https://raw.githubusercontent.com/Asderekl/No-More-Other-GitHub-Languages/refs/heads/main/no-more-other.user.js)**
+2.  **[Нажмите сюда, чтобы установить скрипт](https://raw.githubusercontent.com/Asderekl/No-More-Other-GitHub-Languages/main/no-more-other.user.js)**
 3.  Подтвердите установку во всплывающем окне менеджера скриптов.
 4.  Откройте любой репозиторий на GitHub и обновите страницу.
