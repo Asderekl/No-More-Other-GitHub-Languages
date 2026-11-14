@@ -1,6 +1,6 @@
 <div align="center">
 
-# No More Other
+# No More Other Github Languages
 
 [![Version](https://img.shields.io/badge/version-7.0-blue.svg)](https://github.com/Asderekl/no-more-other-github-languages)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
