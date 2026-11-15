@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         No More Other: GitHub Languages
 // @namespace    https://github.com/Asderekl/no-more-other-github-languages
-// @version      1.0.2
+// @version      1.0.3
 // @description  Reveals hidden languages in GitHub statistics
 // @match        https://github.com/*
 // @grant        none
@@ -44,7 +44,8 @@
 
     function formatPercent(p) {
         if (p > 0 && p < 0.01) return "< 0.01";
-        return p.toFixed(2);
+        // Round to 2 decimal places and remove trailing zeros (e.g., 5.00 -> 5, 5.50 -> 5.5)
+        return parseFloat(p.toFixed(2)).toString();
     }
 
     function getRepoInfo() {
